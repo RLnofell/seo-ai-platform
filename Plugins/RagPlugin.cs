@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Memory;
 using AI_SEO_Ssas_Platform.Services;
 
 namespace AI_SEO_Ssas_Platform.Plugins;
@@ -7,10 +8,12 @@ namespace AI_SEO_Ssas_Platform.Plugins;
 public class RagPlugin
 {
     private readonly ILogCollector _logCollector;
+    private readonly ISemanticTextMemory _memory;
 
-    public RagPlugin(ILogCollector logCollector)
+    public RagPlugin(ILogCollector logCollector, ISemanticTextMemory memory)
     {
         _logCollector = logCollector;
+        _memory = memory;
     }
 
     [KernelFunction("SearchInternalKnowledge")]
@@ -20,10 +23,9 @@ public class RagPlugin
     {
         await _logCollector.AddLogAsync($"\n[RAG Plugin] Đang lục lọi trí nhớ với từ khóa: '{query}'...");
 
-        var memory = VectorDbService.Memory;
-        if (memory == null) return "Lỗi: Không thể kết nối đến Vector Database.";
+        if (_memory == null) return "Lỗi: Không thể kết nối đến Vector Database.";
 
-        var results = memory.SearchAsync("seo_knowledge", query, limit: 5, minRelevanceScore: 0.1);
+        var results = _memory.SearchAsync("seo_knowledge", query, limit: 5, minRelevanceScore: 0.1);
         
         await foreach (var result in results)
         {
@@ -34,7 +36,7 @@ public class RagPlugin
             }
         }
 
-        var firstResult = await memory.SearchAsync("seo_knowledge", query, limit: 1).FirstOrDefaultAsync();
+        var firstResult = await _memory.SearchAsync("seo_knowledge", query, limit: 1).FirstOrDefaultAsync();
         if (firstResult != null)
         {
             await _logCollector.AddLogAsync($"[RAG Plugin] Đã tìm thấy (Vector Match): {firstResult.Metadata.Text}");

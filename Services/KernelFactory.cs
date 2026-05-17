@@ -19,9 +19,6 @@ public static class KernelFactory
             endpoint: new Uri(endpoint)
         );
         
-        builder.Plugins.AddFromType<AI_SEO_Ssas_Platform.Plugins.RagPlugin>("RagPlugin");
-        builder.Plugins.AddFromType<AI_SEO_Ssas_Platform.Plugins.SeoAutomationPlugin>("SeoAutomationPlugin");
-
         return builder.Build();
     }
 }

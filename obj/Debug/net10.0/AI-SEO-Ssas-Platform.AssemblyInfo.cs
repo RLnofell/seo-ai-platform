@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AI-SEO-Ssas-Platform")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+26f040b899fa031242f2a3f6ef981d3d05e83e2b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5ca3d02f7ba7724413d8497b85c9739d63a69c80")]
 [assembly: System.Reflection.AssemblyProductAttribute("AI-SEO-Ssas-Platform")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AI-SEO-Ssas-Platform")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

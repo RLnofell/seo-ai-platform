@@ -7,38 +7,40 @@ namespace AI_SEO_Ssas_Platform.Services;
 
 public interface ILogCollector
 {
-    void Initialize();
+    void Initialize(string connectionId);
     Task AddLogAsync(string message);
     List<string> GetLogs();
 }
 
 public class LogCollector : ILogCollector
 {
-    private readonly AsyncLocal<List<string>> _logs = new();
+    private List<string> _logs = new();
     private readonly IHubContext<AgentHub> _hubContext;
+    private string _connectionId = string.Empty;
 
     public LogCollector(IHubContext<AgentHub> hubContext)
     {
         _hubContext = hubContext;
     }
 
-    public void Initialize()
+    public void Initialize(string connectionId)
     {
-        _logs.Value = new List<string>();
+        _logs = new List<string>();
+        _connectionId = connectionId;
     }
 
     public async Task AddLogAsync(string message)
     {
-        _logs.Value?.Add(message);
+        _logs.Add(message);
         System.Console.WriteLine(message);
-        await _hubContext.Clients.All.SendAsync("ReceiveLog", message);
+        if (!string.IsNullOrEmpty(_connectionId))
+        {
+            await _hubContext.Clients.Client(_connectionId).SendAsync("ReceiveLog", message);
+        }
     }
 
     public List<string> GetLogs()
     {
-        return _logs.Value?.ToList() ?? new List<string>();
+        return _logs.ToList();
     }
-
-    // Keep static methods for compatibility during transition if needed, 
-    // but we will move to DI.
 }

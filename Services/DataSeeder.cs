@@ -1,15 +1,12 @@
-using Microsoft.Extensions.Configuration;
+using Microsoft.SemanticKernel.Memory;
 
 namespace AI_SEO_Ssas_Platform.Services;
 
 public static class DataSeeder
 {
-    public static async Task SeedAsync(IConfiguration config)
+    public static async Task SeedAsync(ISemanticTextMemory memory)
     {
         Console.WriteLine("[*] Đang khởi tạo/kết nối Vector Database (SQLite)...");
-        
-        VectorDbService.Initialize(config);
-        var memory = VectorDbService.Memory;
         
         string kbPath = Path.Combine(Directory.GetCurrentDirectory(), "KnowledgeBase");
         if (!Directory.Exists(kbPath))

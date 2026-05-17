@@ -56,7 +56,8 @@ function App() {
 
     try {
       const response = await axios.post('http://localhost:5000/api/agent/run', {
-        input: input
+        input: input,
+        connectionId: connectionRef.current?.connectionId || ''
       });
       
       const { finalArticle, densityResult, postResult } = response.data;

@@ -8,7 +8,7 @@ public record RunResponse(List<string> Logs, string FinalArticle, string Density
 
 public interface IAgentOrchestrator
 {
-    Task<RunResponse> RunAgentAsync(string input);
+    Task<RunResponse> RunAgentAsync(string input, string connectionId);
 }
 
 public class AgentOrchestrator : IAgentOrchestrator
@@ -24,9 +24,9 @@ public class AgentOrchestrator : IAgentOrchestrator
         _config = config;
     }
 
-    public async Task<RunResponse> RunAgentAsync(string input)
+    public async Task<RunResponse> RunAgentAsync(string input, string connectionId)
     {
-        _logCollector.Initialize();
+        _logCollector.Initialize(connectionId);
         
         if (string.IsNullOrWhiteSpace(input)) 
             throw new ArgumentException("Input không hợp lệ");

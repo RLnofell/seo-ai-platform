@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
+using AI_SEO_Ssas_Platform.Services;
 
 namespace AI_SEO_Ssas_Platform.Plugins;
 
