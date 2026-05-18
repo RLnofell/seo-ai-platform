@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Loader2, Cpu, FileText, CheckCircle } from 'lucide-react';
+import { Sparkles, Loader2, Cpu, FileText, CheckCircle, Send } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -78,99 +78,134 @@ function App() {
     return '';
   };
 
+  // Simple Markdown parser to make headers bold and style them in the article box
+  const renderArticle = (text) => {
+    if (!text) return null;
+    return text.split('\n').map((line, i) => {
+      if (line.startsWith('### ')) return <h3 key={i}>{line.replace('### ', '')}</h3>;
+      if (line.startsWith('## ')) return <h2 key={i}>{line.replace('## ', '')}</h2>;
+      if (line.startsWith('# ')) return <h1 key={i}>{line.replace('# ', '')}</h1>;
+      if (line.startsWith('- ') || line.startsWith('* ')) return <li key={i} style={{marginLeft: '20px', marginBottom: '8px'}}>{line.substring(2)}</li>;
+      if (line.trim() === '') return <br key={i} />;
+      return <p key={i} style={{marginBottom: '10px'}}>{line}</p>;
+    });
+  };
+
   return (
-    <div className="app-container">
-      <header>
-        <h1>AI SEO Agent <span className="badge">v2.0</span></h1>
-        <p className="subtitle">Hệ thống Multi-Agent tối ưu SEO và RAG chuyên sâu</p>
-      </header>
+    <>
+      {/* Animated Background */}
+      <div className="bg-orbs">
+        <div className="orb orb-1"></div>
+        <div className="orb orb-2"></div>
+        <div className="orb orb-3"></div>
+      </div>
 
-      <form className="input-section" onSubmit={handleRunAgent}>
-        <input
-          type="text"
-          className="cyber-input"
-          placeholder="Nhập yêu cầu (VD: 'Viết bài SEO về xe cẩu tự hành')"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={loading}
-        />
-        <button className="cyber-btn" type="submit" disabled={loading || !input.trim()}>
-          {loading ? <Loader2 className="spinner" size={20} /> : <Search size={20} />}
-          {loading ? 'Agent đang chạy...' : 'Bắt đầu quy trình'}
-        </button>
-      </form>
+      <div className="app-container">
+        <header>
+          <h1>AI SEO Agent <span className="badge">PRO</span></h1>
+          <p className="subtitle">Hệ thống Multi-Agent tối ưu SEO và RAG chuyên sâu</p>
+        </header>
 
-      <div className="main-content">
-        <div className="glass-panel">
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', fontSize: '1.2rem', color: 'var(--accent-cyan)' }}>
-            <Cpu size={20} /> Real-time Agent Workflow
-          </h2>
-          <div className="log-container">
-            {logs.length === 0 && !loading && <span style={{ color: 'var(--text-secondary)' }}>Sẵn sàng nhận lệnh...</span>}
-            <AnimatePresence>
-              {logs.map((log, index) => (
-                <motion.div 
-                  key={index}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={`log-entry ${getLogClass(log)}`}
-                >
-                  {log}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <div ref={logsEndRef} />
+        <form className="input-section" onSubmit={handleRunAgent}>
+          <input
+            type="text"
+            className="cyber-input"
+            placeholder="Nhập yêu cầu (VD: 'Viết bài chuẩn SEO về dịch vụ Cloud Computing...')"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={loading}
+          />
+          <button className="cyber-btn" type="submit" disabled={loading || !input.trim()}>
+            {loading ? <Loader2 className="spinner" size={20} /> : <Sparkles size={20} />}
+            {loading ? 'Đang phân tích...' : 'Khởi chạy Agent'}
+          </button>
+        </form>
+
+        <div className="main-content">
+          <div className="glass-panel">
+            <h2 className="panel-header cyan">
+              <Cpu size={24} /> Trình quản lý Agent (Real-time)
+            </h2>
+            <div className="log-container">
+              {logs.length === 0 && !loading && (
+                <div style={{ color: 'rgba(148, 163, 184, 0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1rem' }}>
+                  <Send size={32} opacity={0.5} />
+                  <span>Hệ thống đang chờ lệnh từ bạn...</span>
+                </div>
+              )}
+              <AnimatePresence>
+                {logs.map((log, index) => (
+                  <motion.div 
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className={`log-entry ${getLogClass(log)}`}
+                  >
+                    {log}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div ref={logsEndRef} />
+            </div>
+          </div>
+
+          <div className="glass-panel result-container">
+            <h2 className="panel-header success">
+              <FileText size={24} /> Kết quả xuất bản
+            </h2>
+            
+            {!result && !loading && (
+              <div style={{ color: 'rgba(148, 163, 184, 0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px' }}>
+                <FileText size={64} style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
+                <p style={{ fontSize: '1.1rem' }}>Nội dung bài viết sẽ xuất hiện tại đây</p>
+              </div>
+            )}
+
+            {loading && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="loading-state"
+              >
+                <div className="pulse-ring">
+                  <Cpu className="spinner" size={32} />
+                </div>
+                <p style={{ fontSize: '1.1rem', letterSpacing: '0.5px' }}>Đang tổng hợp dữ liệu RAG & tối ưu nội dung...</p>
+              </motion.div>
+            )}
+
+            {result && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+              >
+                <div className="stats-grid">
+                  {result.densityResult && (
+                    <div className="stat-card">
+                      <CheckCircle size={18} />
+                      <span>{result.densityResult}</span>
+                    </div>
+                  )}
+                  {result.postResult && (
+                    <div className="stat-card success">
+                      <CheckCircle size={18} />
+                      <span>{result.postResult}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="article-box">
+                  {renderArticle(result.finalArticle)}
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
-
-        <div className="glass-panel result-container">
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', color: 'var(--success)' }}>
-            <FileText size={20} /> Nội dung SEO hoàn thiện
-          </h2>
-          
-          {!result && !loading && (
-            <div style={{ color: 'var(--text-secondary)', textAlign: 'center', marginTop: '4rem', opacity: 0.5 }}>
-              <FileText size={48} style={{ marginBottom: '1rem' }} />
-              <p>Kết quả sẽ xuất hiện tại đây sau khi Agent xử lý xong</p>
-            </div>
-          )}
-
-          {loading && (
-            <div className="loading-state">
-              <Loader2 className="spinner" size={48} />
-              <p>Đang tổng hợp dữ liệu RAG và tối ưu bài viết...</p>
-            </div>
-          )}
-
-          {result && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="result-content"
-            >
-              <div className="stats-grid">
-                {result.densityResult && (
-                  <div className="stat-card">
-                    <CheckCircle size={16} />
-                    <span>{result.densityResult}</span>
-                  </div>
-                )}
-                {result.postResult && (
-                  <div className="stat-card success">
-                    <CheckCircle size={16} />
-                    <span>{result.postResult}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="article-box">
-                {result.finalArticle}
-              </div>
-            </motion.div>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   );
 }
 
