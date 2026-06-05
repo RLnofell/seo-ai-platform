@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, Cpu, FileText, CheckCircle, Send } from 'lucide-react';
+import { Sparkles, Loader2, Cpu, FileText, CheckCircle, Send, Copy, Code, AlertTriangle, ExternalLink } from 'lucide-react';
 import './index.css';
 
 const translations = {
@@ -18,6 +18,16 @@ const translations = {
     panelResult: 'Kết quả xuất bản',
     resultPlaceholder: 'Nội dung bài viết sẽ xuất hiện tại đây',
     loadingState: 'Đang tổng hợp dữ liệu RAG & tối ưu nội dung...',
+    tabArticle: 'Bài viết',
+    tabAudit: 'Kiểm toán SEO',
+    tabSchema: 'Thẻ Meta & Schema',
+    seoScore: 'Điểm SEO',
+    serpPreview: 'Xem trước Google SERP',
+    recommendations: 'Khuyến nghị tối ưu',
+    copySchema: 'Sao chép JSON-LD',
+    copied: 'Đã sao chép!',
+    metaTitle: 'Thẻ Tiêu đề (Meta Title)',
+    metaDesc: 'Thẻ Mô tả (Meta Description)',
   },
   en: {
     title: 'AI SEO Agent',
@@ -31,6 +41,16 @@ const translations = {
     panelResult: 'Publishing Results',
     resultPlaceholder: 'Generated article will appear here',
     loadingState: 'Synthesizing RAG data & optimizing content...',
+    tabArticle: 'Article',
+    tabAudit: 'SEO Audit',
+    tabSchema: 'Meta & Schema',
+    seoScore: 'SEO Score',
+    serpPreview: 'Google SERP Preview',
+    recommendations: 'Optimizations Checklist',
+    copySchema: 'Copy JSON-LD',
+    copied: 'Copied!',
+    metaTitle: 'Meta Title',
+    metaDesc: 'Meta Description',
   }
 };
 
@@ -40,6 +60,8 @@ function App() {
   const [logs, setLogs] = useState([]);
   const [result, setResult] = useState(null);
   const [lang, setLang] = useState(() => localStorage.getItem('seo_agent_lang') || 'vi');
+  const [activeTab, setActiveTab] = useState('article');
+  const [copied, setCopied] = useState(false);
   const logsEndRef = useRef(null);
   const connectionRef = useRef(null);
 
@@ -48,6 +70,30 @@ function App() {
   const handleLangChange = (newLang) => {
     setLang(newLang);
     localStorage.setItem('seo_agent_lang', newLang);
+  };
+
+  const handleCopy = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getScoreColorClass = (score) => {
+    if (score >= 80) return 'green';
+    if (score >= 50) return 'yellow';
+    return 'red';
+  };
+
+  const getScoreMessage = (score) => {
+    if (lang === 'vi') {
+      if (score >= 80) return 'Tuyệt vời! Bài viết của bạn đã đáp ứng đầy đủ các tiêu chuẩn SEO cốt lõi.';
+      if (score >= 50) return 'Tạm ổn. Bạn nên tối ưu thêm tiêu đề hoặc độ dài để bài viết chuẩn SEO hơn.';
+      return 'Cần tối ưu thêm! Bài viết của bạn đang thiếu các từ khóa hoặc cấu trúc cần thiết.';
+    } else {
+      if (score >= 80) return 'Excellent! Your article meets most core search engine optimization criteria.';
+      if (score >= 50) return 'Decent. Consider optimizing headings or length to improve the SEO ranking score.';
+      return 'Needs work! Your content lacks crucial keyword density or heading structure.';
+    }
   };
 
   // Initialize SignalR connection
@@ -90,6 +136,7 @@ function App() {
     setLoading(true);
     setLogs([]); // Reset logs for new run
     setResult(null);
+    setActiveTab('article');
 
     try {
       const response = await axios.post('http://localhost:5000/api/agent/run', {
@@ -98,8 +145,28 @@ function App() {
         language: lang
       });
       
-      const { finalArticle, densityResult, postResult } = response.data;
-      setResult({ finalArticle, densityResult, postResult });
+      const { finalArticle, densityResult, postResult, metaAndSchema, seoAudit } = response.data;
+      
+      let parsedMeta = null;
+      let parsedAudit = null;
+      try {
+        if (metaAndSchema) parsedMeta = JSON.parse(metaAndSchema);
+      } catch (e) {
+        console.error("Failed to parse metaAndSchema", e);
+      }
+      try {
+        if (seoAudit) parsedAudit = JSON.parse(seoAudit);
+      } catch (e) {
+        console.error("Failed to parse seoAudit", e);
+      }
+
+      setResult({ 
+        finalArticle, 
+        densityResult, 
+        postResult, 
+        meta: parsedMeta, 
+        audit: parsedAudit 
+      });
       
     } catch (error) {
       const errorMsg = error.response?.data?.error || error.message;
@@ -234,24 +301,125 @@ function App() {
                 transition={{ duration: 0.5 }}
                 style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
               >
-                <div className="stats-grid">
-                  {result.densityResult && (
-                    <div className="stat-card">
-                      <CheckCircle size={18} />
-                      <span>{result.densityResult}</span>
-                    </div>
-                  )}
-                  {result.postResult && (
-                    <div className="stat-card success">
-                      <CheckCircle size={18} />
-                      <span>{result.postResult}</span>
-                    </div>
-                  )}
+                {/* Tabs Selector */}
+                <div className="tab-menu">
+                  <button 
+                    className={`tab-btn ${activeTab === 'article' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('article')}
+                  >
+                    <FileText size={16} />
+                    <span>{t.tabArticle}</span>
+                  </button>
+                  <button 
+                    className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('audit')}
+                  >
+                    <CheckCircle size={16} />
+                    <span>{t.tabAudit}</span>
+                  </button>
+                  <button 
+                    className={`tab-btn ${activeTab === 'schema' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('schema')}
+                  >
+                    <Code size={16} />
+                    <span>{t.tabSchema}</span>
+                  </button>
                 </div>
-                
-                <div className="article-box">
-                  {renderArticle(result.finalArticle)}
-                </div>
+
+                {/* Tab Content: Article */}
+                {activeTab === 'article' && (
+                  <div className="tab-pane">
+                    <div className="stats-grid">
+                      {result.densityResult && (
+                        <div className="stat-card">
+                          <CheckCircle size={18} />
+                          <span>{result.densityResult}</span>
+                        </div>
+                      )}
+                      {result.postResult && (
+                        <div className="stat-card success">
+                          <CheckCircle size={18} />
+                          <span>{result.postResult}</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="article-box">
+                      {renderArticle(result.finalArticle)}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab Content: SEO Audit */}
+                {activeTab === 'audit' && (
+                  <div className="tab-pane">
+                    <div className="score-section">
+                      <div className="score-circle-container">
+                        <div className={`score-ring ${getScoreColorClass(result.audit?.score || 0)}`}>
+                          <span className="score-val">{result.audit?.score || 0}</span>
+                          <span className="score-lbl">/100</span>
+                        </div>
+                        <div className="score-details">
+                          <h3>{t.seoScore}</h3>
+                          <p>{getScoreMessage(result.audit?.score || 0)}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="serp-container">
+                      <h3 className="subheading-label">{t.serpPreview}</h3>
+                      <div className="serp-preview-card">
+                        <span className="serp-url">https://clientwebsite.com/{result.meta?.metaTitle?.toLowerCase().replace(/[^a-z0-9]/g, '-') || 'article-url'}</span>
+                        <h4 className="serp-title">{result.meta?.metaTitle || 'Meta Title Placeholder'}</h4>
+                        <p className="serp-desc">{result.meta?.metaDescription || 'Meta Description Placeholder'}</p>
+                      </div>
+                    </div>
+
+                    <div className="recommendations-container">
+                      <h3 className="subheading-label">{t.recommendations}</h3>
+                      <ul className="recommendations-list">
+                        {result.audit?.recommendations?.map((rec, i) => (
+                          <li key={i} className={`rec-item ${rec.startsWith('✓') ? 'success' : rec.startsWith('!') ? 'warning' : 'danger'}`}>
+                            {rec.startsWith('✓') && <CheckCircle size={16} />}
+                            {rec.startsWith('!') && <AlertTriangle size={16} />}
+                            {(!rec.startsWith('✓') && !rec.startsWith('!')) && <AlertTriangle size={16} />}
+                            <span>{rec.replace(/^[✓!✗]\s*/, '')}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab Content: Schema & Meta */}
+                {activeTab === 'schema' && (
+                  <div className="tab-pane">
+                    <div className="meta-info-container">
+                      <div className="meta-field">
+                        <label>{t.metaTitle}</label>
+                        <div className="meta-value-box">{result.meta?.metaTitle || '-'}</div>
+                      </div>
+                      <div className="meta-field">
+                        <label>{t.metaDesc}</label>
+                        <div className="meta-value-box">{result.meta?.metaDescription || '-'}</div>
+                      </div>
+                    </div>
+
+                    <div className="schema-header">
+                      <h3 className="subheading-label">JSON-LD Structured Data</h3>
+                      <button 
+                        className="copy-btn" 
+                        onClick={() => handleCopy(JSON.stringify(result.meta?.jsonLd || {}, null, 2))}
+                      >
+                        <Copy size={16} />
+                        <span>{copied ? t.copied : t.copySchema}</span>
+                      </button>
+                    </div>
+                    <pre className="schema-box">
+                      <code>{JSON.stringify(result.meta?.jsonLd || {}, null, 2)}</code>
+                    </pre>
+                  </div>
+                )}
               </motion.div>
             )}
           </div>

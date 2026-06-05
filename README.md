@@ -46,7 +46,8 @@ graph TD
     Kernel -->|Synthesize & Write| LLM[Local LLM - llama3.2]
     LLM -->|Generate SEO-optimized article| Orchestrator
     
-    Orchestrator -->|Keyword density check| SeoPlugin
+    Orchestrator -->|Keyword density & SEO Audit| SeoPlugin
+    Orchestrator -->|Generate Meta Tags & Schema| SeoPlugin
     Orchestrator -->|Publish article| WP[Post to WordPress]
     
     Orchestrator -->|Return final result| App
@@ -154,7 +155,7 @@ AI-SEO-Ssas-Platform/
 │
 ├── Plugins/                        # Agent plugin definitions (Semantic Kernel Tools)
 │   ├── RagPlugin.cs                # Retrieves internal information from the Vector DB
-│   └── SeoAutomationPlugin.cs      # Google Top 10 analysis, keyword density, WordPress publisher
+│   └── SeoAutomationPlugin.cs      # Google Top 10, keyword density, Meta tags & JSON-LD Schema generation, SEO Score Audit, WordPress publisher
 │
 ├── Services/                       # Application logic and services
 │   ├── AgentHub.cs                 # SignalR hub streaming real-time logs to the frontend

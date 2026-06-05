@@ -4,7 +4,7 @@ using AI_SEO_Ssas_Platform.Services;
 
 namespace AI_SEO_Ssas_Platform.Services;
 
-public record RunResponse(List<string> Logs, string FinalArticle, string DensityResult, string PostResult);
+public record RunResponse(List<string> Logs, string FinalArticle, string DensityResult, string PostResult, string MetaAndSchema = "", string SeoAudit = "");
 
 public interface IAgentOrchestrator
 {
@@ -69,6 +69,8 @@ public class AgentOrchestrator : IAgentOrchestrator
         string finalArticle = "";
         string densityResultText = "";
         string postResultText = "";
+        string seoAuditText = "";
+        string metaSchemaText = "";
 
         // Tự động nhận diện Entity (Thay thế hardcode Thắng Hiền/Đạt Phát)
         string keyword = await ExtractKeywordAsync(input, responseText);
@@ -138,15 +140,44 @@ Yêu cầu:
             
             if (isEn)
             {
-                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Step 4: Checking keyword density...");
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Step 4: Checking keyword density & running SEO audit...");
             }
             else
             {
-                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 4: Kiểm tra mật độ từ khóa...");
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 4: Kiểm tra mật độ từ khóa & phân tích điểm số SEO...");
             }
             
             var densityResult = await _kernel.InvokeAsync(seoPlugin["CheckKeywordDensity"], new() { ["content"] = finalArticle, ["keyword"] = keyword, ["language"] = language });
             densityResultText = densityResult.ToString() ?? "";
+
+            // Calculate density double for scoring
+            int count = System.Text.RegularExpressions.Regex.Matches(
+                finalArticle, 
+                System.Text.RegularExpressions.Regex.Escape(keyword), 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            ).Count;
+            int wordCount = finalArticle.Split(new[] { ' ', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries).Length;
+            double density = wordCount > 0 ? (double)count / wordCount * 100 : 0;
+
+            var seoAuditResult = await _kernel.InvokeAsync(seoPlugin["AnalyzeSeoScore"], new() 
+            { 
+                ["title"] = isEn ? $"Professional {keyword} Solutions" : $"Giải pháp {keyword} chuyên nghiệp", 
+                ["content"] = finalArticle, 
+                ["keyword"] = keyword, 
+                ["density"] = density, 
+                ["language"] = language 
+            });
+            seoAuditText = seoAuditResult.ToString() ?? "";
+
+            var metaSchemaResult = await _kernel.InvokeAsync(seoPlugin["GenerateMetaTagsAndSchema"], new() 
+            { 
+                ["kernel"] = _kernel,
+                ["title"] = isEn ? $"Professional {keyword} Solutions" : $"Giải pháp {keyword} chuyên nghiệp", 
+                ["content"] = finalArticle, 
+                ["keyword"] = keyword, 
+                ["language"] = language 
+            });
+            metaSchemaText = metaSchemaResult.ToString() ?? "";
 
             if (isEn)
             {
@@ -169,6 +200,8 @@ Yêu cầu:
             {
                 await _logCollector.AddLogAsync("\n[HOÀN TẤT] Agent đã hoàn thành toàn bộ quy trình SEO.");
             }
+
+            return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText, metaSchemaText, seoAuditText);
         }
         else
         {
@@ -184,7 +217,7 @@ Yêu cầu:
             finalArticle = responseText;
         }
 
-        return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText);
+        return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText, "", "");
     }
 
     private async Task<string> ExtractKeywordAsync(string input, string aiResponse)
