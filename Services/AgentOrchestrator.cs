@@ -8,7 +8,7 @@ public record RunResponse(List<string> Logs, string FinalArticle, string Density
 
 public interface IAgentOrchestrator
 {
-    Task<RunResponse> RunAgentAsync(string input, string connectionId);
+    Task<RunResponse> RunAgentAsync(string input, string connectionId, string language = "vi");
 }
 
 public class AgentOrchestrator : IAgentOrchestrator
@@ -24,15 +24,25 @@ public class AgentOrchestrator : IAgentOrchestrator
         _config = config;
     }
 
-    public async Task<RunResponse> RunAgentAsync(string input, string connectionId)
+    public async Task<RunResponse> RunAgentAsync(string input, string connectionId, string language = "vi")
     {
         _logCollector.Initialize(connectionId);
         
-        if (string.IsNullOrWhiteSpace(input)) 
-            throw new ArgumentException("Input không hợp lệ");
+        bool isEn = language.Equals("en", StringComparison.OrdinalIgnoreCase);
 
-        await _logCollector.AddLogAsync($"[AI Planner] Đang phân tích yêu cầu: '{input}'...");
-        await _logCollector.AddLogAsync("[AI Planner] Tự động lập kế hoạch và kích hoạt các công cụ cần thiết...");
+        if (string.IsNullOrWhiteSpace(input)) 
+            throw new ArgumentException(isEn ? "Input is invalid" : "Input không hợp lệ");
+
+        if (isEn)
+        {
+            await _logCollector.AddLogAsync($"[AI Planner] Analyzing request: '{input}'...");
+            await _logCollector.AddLogAsync("[AI Planner] Automatically planning and activating required tools...");
+        }
+        else
+        {
+            await _logCollector.AddLogAsync($"[AI Planner] Đang phân tích yêu cầu: '{input}'...");
+            await _logCollector.AddLogAsync("[AI Planner] Tự động lập kế hoạch và kích hoạt các công cụ cần thiết...");
+        }
 
 #pragma warning disable SKEXP0070
         OpenAIPromptExecutionSettings settings = new() 
@@ -41,7 +51,12 @@ public class AgentOrchestrator : IAgentOrchestrator
         };
 #pragma warning restore SKEXP0070
 
-        string prompt = $"""
+        string prompt = isEn ? $"""
+                         Your task is: "{input}".
+                         You are an AI SEO Agent. You have been provided with tools.
+                         Please reason automatically and use the tools to retrieve internal information (pricing, process) and write a short, search-optimized SEO post.
+                         Do not output JSON code blocks.
+                         """ : $"""
                          Nhiệm vụ của bạn là: "{input}".
                          Bạn là AI SEO Agent. Bạn đã được cung cấp sẵn các công cụ (Tools).
                          Hãy tự động suy luận và sử dụng công cụ để lấy thông tin nội bộ (giá cả, quy trình) rồi viết 1 bài đăng chuẩn SEO ngắn gọn.
@@ -58,20 +73,55 @@ public class AgentOrchestrator : IAgentOrchestrator
         // Tự động nhận diện Entity (Thay thế hardcode Thắng Hiền/Đạt Phát)
         string keyword = await ExtractKeywordAsync(input, responseText);
 
-        if (responseText.Contains("\"name\"") || responseText.Contains("Plugin"))
+        if (responseText.Contains("\"name\"") || responseText.Contains("Plugin") || responseText.Contains("plugin"))
         {
-            await _logCollector.AddLogAsync("\n[AI Planner] AI đã ra quyết định thực thi chuỗi công cụ (Agentic Pipeline).");
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync("\n[AI Planner] AI decided to execute the toolchain (Agentic Pipeline).");
+                await _logCollector.AddLogAsync($"\n[Agentic Pipeline] Step 1: Retrieving internal knowledge for: '{keyword}'");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync("\n[AI Planner] AI đã ra quyết định thực thi chuỗi công cụ (Agentic Pipeline).");
+                await _logCollector.AddLogAsync($"\n[Agentic Pipeline] Bước 1: Tra cứu kiến thức nội bộ cho: '{keyword}'");
+            }
             
-            await _logCollector.AddLogAsync($"\n[Agentic Pipeline] Bước 1: Tra cứu kiến thức nội bộ cho: '{keyword}'");
             var ragPlugin = _kernel.Plugins["RagPlugin"];
             var ragResult = await _kernel.InvokeAsync(ragPlugin["SearchInternalKnowledge"], new() { ["query"] = keyword });
             
-            await _logCollector.AddLogAsync($"[Agentic Pipeline] Bước 2: Phân tích đối thủ Google cho: '{keyword}'");
-            var seoPlugin = _kernel.Plugins["SeoAutomationPlugin"];
-            var googleResult = await _kernel.InvokeAsync(seoPlugin["SearchGoogleTop10"], new() { ["keyword"] = keyword });
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync($"[Agentic Pipeline] Step 2: Analyzing Google competitors for: '{keyword}'");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync($"[Agentic Pipeline] Bước 2: Phân tích đối thủ Google cho: '{keyword}'");
+            }
             
-            await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 3: Sáng tạo nội dung tối ưu SEO...");
-            string finalPrompt = $@"Bạn là một Chuyên gia SEO AI.
+            var seoPlugin = _kernel.Plugins["SeoAutomationPlugin"];
+            var googleResult = await _kernel.InvokeAsync(seoPlugin["SearchGoogleTop10"], new() { ["keyword"] = keyword, ["language"] = language });
+            
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Step 3: Generating optimized SEO content...");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 3: Sáng tạo nội dung tối ưu SEO...");
+            }
+            
+            string finalPrompt = isEn ? $@"You are an AI SEO Specialist.
+Task: Write a highly engaging, structured, search-optimized SEO post with clear bullet points for the request: '{input}'.
+
+INPUT DATA:
+1. Internal Data: {ragResult}
+2. Market Data: {googleResult}
+
+Requirements:
+- Write the article directly in natural English.
+- Seamlessly integrate pricing/warranty info from the internal data.
+- The article should be about 200-300 words long."
+            : $@"Bạn là một Chuyên gia SEO AI.
 Nhiệm vụ: Viết 1 bài đăng chuẩn SEO thật lôi cuốn, có gạch đầu dòng rõ ràng cho yêu cầu: '{input}'.
 
 DỮ LIỆU ĐẦU VÀO:
@@ -86,20 +136,50 @@ Yêu cầu:
             var articleResult = await _kernel.InvokePromptAsync(finalPrompt);
             finalArticle = articleResult.ToString();
             
-            await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 4: Kiểm tra mật độ từ khóa...");
-            var densityResult = await _kernel.InvokeAsync(seoPlugin["CheckKeywordDensity"], new() { ["content"] = finalArticle, ["keyword"] = keyword });
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Step 4: Checking keyword density...");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 4: Kiểm tra mật độ từ khóa...");
+            }
+            
+            var densityResult = await _kernel.InvokeAsync(seoPlugin["CheckKeywordDensity"], new() { ["content"] = finalArticle, ["keyword"] = keyword, ["language"] = language });
             densityResultText = densityResult.ToString() ?? "";
 
-            await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 5: Xuất bản lên hệ thống WordPress...");
-            string title = $"Giải pháp {keyword} chuyên nghiệp";
-            var postResult = await _kernel.InvokeAsync(seoPlugin["PostToWordPress"], new() { ["title"] = title, ["content"] = finalArticle });
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Step 5: Publishing to WordPress site...");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 5: Xuất bản lên hệ thống WordPress...");
+            }
+            
+            string title = isEn ? $"Professional {keyword} Solutions" : $"Giải pháp {keyword} chuyên nghiệp";
+            var postResult = await _kernel.InvokeAsync(seoPlugin["PostToWordPress"], new() { ["title"] = title, ["content"] = finalArticle, ["language"] = language });
             postResultText = postResult.ToString() ?? "";
             
-            await _logCollector.AddLogAsync("\n[HOÀN TẤT] Agent đã hoàn thành toàn bộ quy trình SEO.");
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync("\n[COMPLETED] Agent has successfully finished the SEO workflow.");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync("\n[HOÀN TẤT] Agent đã hoàn thành toàn bộ quy trình SEO.");
+            }
         }
         else
         {
-            await _logCollector.AddLogAsync("\n[BÁO CÁO] AI Agent phản hồi trực tiếp:");
+            if (isEn)
+            {
+                await _logCollector.AddLogAsync("\n[REPORT] AI Agent responded directly:");
+            }
+            else
+            {
+                await _logCollector.AddLogAsync("\n[BÁO CÁO] AI Agent phản hồi trực tiếp:");
+            }
             await _logCollector.AddLogAsync(responseText);
             finalArticle = responseText;
         }
@@ -109,13 +189,11 @@ Yêu cầu:
 
     private async Task<string> ExtractKeywordAsync(string input, string aiResponse)
     {
-        // Simple extraction logic - can be upgraded to another AI call
         if (input.Contains("Thắng Hiền", StringComparison.OrdinalIgnoreCase)) return "Thắng Hiền";
         if (input.Contains("Đạt Phát", StringComparison.OrdinalIgnoreCase)) return "Đạt Phát";
         
-        // Fallback: Use AI to extract the main entity if not found
-        var extractPrompt = $"Trích xuất 1 từ khóa chính (tên thương hiệu hoặc dịch vụ) từ câu sau: \"{input}\". Chỉ in ra từ khóa, không giải thích.";
+        var extractPrompt = $"Extract the main service or brand keyword (1-3 words) from the following sentence: \"{input}\". Return ONLY the keyword, with no extra text, explanations, or quotes.";
         var result = await _kernel.InvokePromptAsync(extractPrompt);
-        return result.ToString().Trim().TrimEnd('.');
+        return result.ToString().Trim().TrimEnd('.').Replace("\"", "");
     }
 }

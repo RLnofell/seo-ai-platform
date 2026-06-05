@@ -92,10 +92,10 @@ app.MapGet("/", () => "AI SEO Agent API is running with SignalR support!");
 
 app.MapPost("/api/agent/run", async (RunRequest request, IAgentOrchestrator orchestrator) =>
 {
-    var result = await orchestrator.RunAgentAsync(request.Input, request.ConnectionId);
+    var result = await orchestrator.RunAgentAsync(request.Input, request.ConnectionId, request.Language);
     return Results.Ok(result);
 });
 
 app.Run();
 
-public record RunRequest(string Input, string ConnectionId);
+public record RunRequest(string Input, string ConnectionId, string Language = "vi");

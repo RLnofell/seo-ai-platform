@@ -5,13 +5,50 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Loader2, Cpu, FileText, CheckCircle, Send } from 'lucide-react';
 import './index.css';
 
+const translations = {
+  vi: {
+    title: 'AI SEO Agent',
+    badge: 'PRO',
+    subtitle: 'Hệ thống Multi-Agent tối ưu SEO và RAG chuyên sâu',
+    placeholder: "Nhập yêu cầu (VD: 'Viết bài chuẩn SEO về dịch vụ Thắng Hiền...')",
+    btnSubmit: 'Khởi chạy Agent',
+    btnRunning: 'Đang phân tích...',
+    panelManager: 'Trình quản lý Agent (Real-time)',
+    waiting: 'Hệ thống đang chờ lệnh từ bạn...',
+    panelResult: 'Kết quả xuất bản',
+    resultPlaceholder: 'Nội dung bài viết sẽ xuất hiện tại đây',
+    loadingState: 'Đang tổng hợp dữ liệu RAG & tối ưu nội dung...',
+  },
+  en: {
+    title: 'AI SEO Agent',
+    badge: 'PRO',
+    subtitle: 'Autonomous Multi-Agent & RAG System for Advanced SEO',
+    placeholder: "Enter request (e.g. 'Write a search-optimized article about Dat Phat...')",
+    btnSubmit: 'Run Agent',
+    btnRunning: 'Analyzing...',
+    panelManager: 'Agent Manager (Real-time)',
+    waiting: 'System is waiting for your command...',
+    panelResult: 'Publishing Results',
+    resultPlaceholder: 'Generated article will appear here',
+    loadingState: 'Synthesizing RAG data & optimizing content...',
+  }
+};
+
 function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState([]);
   const [result, setResult] = useState(null);
+  const [lang, setLang] = useState(() => localStorage.getItem('seo_agent_lang') || 'vi');
   const logsEndRef = useRef(null);
   const connectionRef = useRef(null);
+
+  const t = translations[lang];
+
+  const handleLangChange = (newLang) => {
+    setLang(newLang);
+    localStorage.setItem('seo_agent_lang', newLang);
+  };
 
   // Initialize SignalR connection
   useEffect(() => {
@@ -57,7 +94,8 @@ function App() {
     try {
       const response = await axios.post('http://localhost:5000/api/agent/run', {
         input: input,
-        connectionId: connectionRef.current?.connectionId || ''
+        connectionId: connectionRef.current?.connectionId || '',
+        language: lang
       });
       
       const { finalArticle, densityResult, postResult } = response.data;
@@ -65,7 +103,7 @@ function App() {
       
     } catch (error) {
       const errorMsg = error.response?.data?.error || error.message;
-      setLogs(prev => [...prev, `[LỖI HỆ THỐNG] ${errorMsg}`]);
+      setLogs(prev => [...prev, `[SYSTEM ERROR] ${errorMsg}`]);
     } finally {
       setLoading(false);
     }
@@ -73,8 +111,8 @@ function App() {
 
   const getLogClass = (log) => {
     if (log.includes('[RAG Plugin]') || log.includes('[Seo Plugin]') || log.includes('[Agentic Pipeline]')) return 'highlight';
-    if (log.includes('thành công') || log.includes('[v]') || log.includes('[HOÀN TẤT]')) return 'success';
-    if (log.includes('[LỖI]')) return 'error';
+    if (log.includes('thành công') || log.includes('successfully') || log.includes('[v]') || log.includes('[HOÀN TẤT]') || log.includes('[COMPLETED]')) return 'success';
+    if (log.includes('[LỖI]') || log.includes('[SYSTEM ERROR]') || log.includes('[ERROR]')) return 'error';
     return '';
   };
 
@@ -102,35 +140,49 @@ function App() {
 
       <div className="app-container">
         <header>
-          <h1>AI SEO Agent <span className="badge">PRO</span></h1>
-          <p className="subtitle">Hệ thống Multi-Agent tối ưu SEO và RAG chuyên sâu</p>
+          <div className="lang-switcher">
+            <button 
+              className={`lang-btn ${lang === 'vi' ? 'active' : ''}`} 
+              onClick={() => handleLangChange('vi')}
+            >
+              VI
+            </button>
+            <button 
+              className={`lang-btn ${lang === 'en' ? 'active' : ''}`} 
+              onClick={() => handleLangChange('en')}
+            >
+              EN
+            </button>
+          </div>
+          <h1>{t.title} <span className="badge">{t.badge}</span></h1>
+          <p className="subtitle">{t.subtitle}</p>
         </header>
 
         <form className="input-section" onSubmit={handleRunAgent}>
           <input
             type="text"
             className="cyber-input"
-            placeholder="Nhập yêu cầu (VD: 'Viết bài chuẩn SEO về dịch vụ Cloud Computing...')"
+            placeholder={t.placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
           />
           <button className="cyber-btn" type="submit" disabled={loading || !input.trim()}>
             {loading ? <Loader2 className="spinner" size={20} /> : <Sparkles size={20} />}
-            {loading ? 'Đang phân tích...' : 'Khởi chạy Agent'}
+            {loading ? t.btnRunning : t.btnSubmit}
           </button>
         </form>
 
         <div className="main-content">
           <div className="glass-panel">
             <h2 className="panel-header cyan">
-              <Cpu size={24} /> Trình quản lý Agent (Real-time)
+              <Cpu size={24} /> {t.panelManager}
             </h2>
             <div className="log-container">
               {logs.length === 0 && !loading && (
                 <div style={{ color: 'rgba(148, 163, 184, 0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1rem' }}>
                   <Send size={32} opacity={0.5} />
-                  <span>Hệ thống đang chờ lệnh từ bạn...</span>
+                  <span>{t.waiting}</span>
                 </div>
               )}
               <AnimatePresence>
@@ -152,13 +204,13 @@ function App() {
 
           <div className="glass-panel result-container">
             <h2 className="panel-header success">
-              <FileText size={24} /> Kết quả xuất bản
+              <FileText size={24} /> {t.panelResult}
             </h2>
             
             {!result && !loading && (
               <div style={{ color: 'rgba(148, 163, 184, 0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px' }}>
                 <FileText size={64} style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
-                <p style={{ fontSize: '1.1rem' }}>Nội dung bài viết sẽ xuất hiện tại đây</p>
+                <p style={{ fontSize: '1.1rem' }}>{t.resultPlaceholder}</p>
               </div>
             )}
 
@@ -171,7 +223,7 @@ function App() {
                 <div className="pulse-ring">
                   <Cpu className="spinner" size={32} />
                 </div>
-                <p style={{ fontSize: '1.1rem', letterSpacing: '0.5px' }}>Đang tổng hợp dữ liệu RAG & tối ưu nội dung...</p>
+                <p style={{ fontSize: '1.1rem', letterSpacing: '0.5px' }}>{t.loadingState}</p>
               </motion.div>
             )}
 
