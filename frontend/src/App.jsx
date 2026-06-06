@@ -78,6 +78,14 @@ function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+  };
+
   const getScoreColorClass = (score) => {
     if (score >= 80) return 'green';
     if (score >= 50) return 'yellow';
@@ -145,7 +153,7 @@ function App() {
         language: lang
       });
       
-      const { finalArticle, densityResult, postResult, metaAndSchema, seoAudit } = response.data;
+      const { finalArticle, densityResult, postResult, metaAndSchema, seoAudit, googleIndexingResult } = response.data;
       
       let parsedMeta = null;
       let parsedAudit = null;
@@ -165,7 +173,8 @@ function App() {
         densityResult, 
         postResult, 
         meta: parsedMeta, 
-        audit: parsedAudit 
+        audit: parsedAudit,
+        googleIndexingResult
       });
       
     } catch (error) {
@@ -241,7 +250,7 @@ function App() {
         </form>
 
         <div className="main-content">
-          <div className="glass-panel">
+          <div className="glass-panel" onMouseMove={handleMouseMove}>
             <h2 className="panel-header cyan">
               <Cpu size={24} /> {t.panelManager}
             </h2>
@@ -269,7 +278,7 @@ function App() {
             </div>
           </div>
 
-          <div className="glass-panel result-container">
+          <div className="glass-panel result-container" onMouseMove={handleMouseMove}>
             <h2 className="panel-header success">
               <FileText size={24} /> {t.panelResult}
             </h2>
@@ -340,6 +349,12 @@ function App() {
                         <div className="stat-card success">
                           <CheckCircle size={18} />
                           <span>{result.postResult}</span>
+                        </div>
+                      )}
+                      {result.googleIndexingResult && (
+                        <div className="stat-card indexing">
+                          <CheckCircle size={18} />
+                          <span>{result.googleIndexingResult}</span>
                         </div>
                       )}
                     </div>

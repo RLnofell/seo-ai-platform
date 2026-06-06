@@ -4,7 +4,7 @@ using AI_SEO_Ssas_Platform.Services;
 
 namespace AI_SEO_Ssas_Platform.Services;
 
-public record RunResponse(List<string> Logs, string FinalArticle, string DensityResult, string PostResult, string MetaAndSchema = "", string SeoAudit = "");
+public record RunResponse(List<string> Logs, string FinalArticle, string DensityResult, string PostResult, string MetaAndSchema = "", string SeoAudit = "", string GoogleIndexingResult = "");
 
 public interface IAgentOrchestrator
 {
@@ -191,6 +191,23 @@ Yêu cầu:
             string title = isEn ? $"Professional {keyword} Solutions" : $"Giải pháp {keyword} chuyên nghiệp";
             var postResult = await _kernel.InvokeAsync(seoPlugin["PostToWordPress"], new() { ["title"] = title, ["content"] = finalArticle, ["language"] = language });
             postResultText = postResult.ToString() ?? "";
+
+            string googleIndexingResultText = "";
+            var urlMatch = System.Text.RegularExpressions.Regex.Match(postResultText, @"https?://[^\s]+");
+            if (urlMatch.Success)
+            {
+                string url = urlMatch.Value;
+                if (isEn)
+                {
+                    await _logCollector.AddLogAsync("\n[Agentic Pipeline] Step 6: Submitting to Google Indexing API...");
+                }
+                else
+                {
+                    await _logCollector.AddLogAsync("\n[Agentic Pipeline] Bước 6: Gửi yêu cầu lập chỉ mục tới Google Indexing API...");
+                }
+                var indexingResult = await _kernel.InvokeAsync(seoPlugin["SubmitToGoogleIndexing"], new() { ["url"] = url, ["language"] = language });
+                googleIndexingResultText = indexingResult.ToString() ?? "";
+            }
             
             if (isEn)
             {
@@ -201,7 +218,7 @@ Yêu cầu:
                 await _logCollector.AddLogAsync("\n[HOÀN TẤT] Agent đã hoàn thành toàn bộ quy trình SEO.");
             }
 
-            return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText, metaSchemaText, seoAuditText);
+            return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText, metaSchemaText, seoAuditText, googleIndexingResultText);
         }
         else
         {
@@ -217,7 +234,7 @@ Yêu cầu:
             finalArticle = responseText;
         }
 
-        return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText, "", "");
+        return new RunResponse(_logCollector.GetLogs(), finalArticle, densityResultText, postResultText, "", "", "");
     }
 
     private async Task<string> ExtractKeywordAsync(string input, string aiResponse)
