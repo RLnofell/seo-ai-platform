@@ -228,7 +228,7 @@ Return ONLY the raw JSON string. Do not wrap it in markdown code blocks or add a
         {
             await _logCollector.AddLogAsync($"\n[Seo Plugin] Submitting URL to Google Indexing API: '{url}'...");
             await _logCollector.AddLogAsync("[Seo Plugin] Sending POST request to https://indexing.googleapis.com/v3/urlNotifications:publish...");
-            await Task.Delay(1500); // Simulate API latency
+            await Task.Delay(1500);
             await _logCollector.AddLogAsync("[Seo Plugin] -> Google Indexing API response: 200 OK. URL status updated to URL_UPDATED.");
             return $"Google Indexing API: Submitted and requested crawling for {url}";
         }
@@ -236,7 +236,7 @@ Return ONLY the raw JSON string. Do not wrap it in markdown code blocks or add a
         {
             await _logCollector.AddLogAsync($"\n[Seo Plugin] Đang gửi URL bài viết tới Google Indexing API: '{url}'...");
             await _logCollector.AddLogAsync("[Seo Plugin] Gửi yêu cầu POST tới https://indexing.googleapis.com/v3/urlNotifications:publish...");
-            await Task.Delay(1500); // Giả lập độ trễ API
+            await Task.Delay(1500);
             await _logCollector.AddLogAsync("[Seo Plugin] -> Google Indexing API phản hồi: 200 OK. Trạng thái URL được cập nhật thành URL_UPDATED.");
             return $"Google Indexing API: Đã gửi yêu cầu lập chỉ mục cho {url}";
         }
