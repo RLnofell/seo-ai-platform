@@ -6,6 +6,18 @@ This project is designed to run entirely locally (or connect to cloud models), s
 
 ---
 
+## 🚀 Key Features
+
+*   **RAG-Enhanced Writer:** Automatically retrieves private business facts, pricing sheets, and project portfolios from a local SQLite Vector Database using Semantic Kernel hybrid vector search.
+*   **SEO Automation Plugin:** Integrates search keyword recommendations, keyword density audit checks, JSON-LD Schema generation, meta tag assembly, and WordPress publishing.
+*   **Google Indexing API Submission:** Requests immediate search engine crawling and indexing for newly published WordPress articles to accelerate search indexing.
+*   **Linear / Modern Premium UI:** Implements a premium developer-tool design system inspired by Linear and Vercel. Includes:
+    *   **4-Layer Background:** Base top-radial gradient, high-fidelity SVG fractal noise overlay to eliminate banding, slow-floating keyframe-animated ambient light blobs, and a technical 64px grid overlay.
+    *   **Interactive Mouse-Tracking Spotlight:** Main container cards react to cursor movements, displaying a glowing radial accent spotlight centered on the pointer.
+    *   **Micro-interactions:** Swift expo-out animation curves, active click scaling (`scale(0.98)`), and glowing borders.
+
+---
+
 ## Technology Stack
 
 ### 1. Backend (C# .NET Core)
@@ -18,7 +30,7 @@ This project is designed to run entirely locally (or connect to cloud models), s
 
 ### 2. Frontend (React)
 *   **Framework:** `React 19` & `Vite 8` (Ultra-fast development server).
-*   **Design & UI:** Custom Glassmorphism UI (premium frosted-glass interface), fully responsive layout, and a dynamic language switcher (EN/VI).
+*   **Design & UI:** Custom Glassmorphism UI styled with the Linear / Modern Design System, fully responsive layout, and a dynamic language switcher (EN/VI).
 *   **Animations:** `Framer Motion` (v12.38) for smooth, step-by-step transitions of agent logs.
 *   **Icons:** `Lucide React` (modern icon pack).
 *   **API & Real-time Integration:** `Axios` & `@microsoft/signalr` (receives real-time log streams from the backend).
@@ -50,7 +62,10 @@ graph TD
     Orchestrator -->|Generate Meta Tags & Schema| SeoPlugin
     Orchestrator -->|Publish article| WP[Post to WordPress]
     
-    Orchestrator -->|Return final result| App
+    Orchestrator -->|Google Indexing Submission| Indexer[SubmitToGoogleIndexing]
+    Indexer -->|Request instant crawl| GoogleAPI[Google Indexing API]
+    
+    Orchestrator -->|Return final response DTO| App
 ```
 
 ---
@@ -155,7 +170,7 @@ AI-SEO-Ssas-Platform/
 │
 ├── Plugins/                        # Agent plugin definitions (Semantic Kernel Tools)
 │   ├── RagPlugin.cs                # Retrieves internal information from the Vector DB
-│   └── SeoAutomationPlugin.cs      # Google Top 10, keyword density, Meta tags & JSON-LD Schema generation, SEO Score Audit, WordPress publisher
+│   └── SeoAutomationPlugin.cs      # Google Top 10, keyword density, Meta tags & JSON-LD Schema generation, SEO Score Audit, WordPress publisher, Google Indexing submitter
 │
 ├── Services/                       # Application logic and services
 │   ├── AgentHub.cs                 # SignalR hub streaming real-time logs to the frontend
@@ -173,45 +188,8 @@ AI-SEO-Ssas-Platform/
         ├── main.jsx
         ├── App.jsx                 # Main component managing state, SignalR connection, and layout
         ├── App.css                 # General/cleanup CSS rules
-        └── index.css               # Premium Glassmorphism styling and theme configurations
+        └── index.css               # Premium Linear/Modern Design System theme configurations
 ```
-
----
-
-## GitHub Push Guide
-
-To push your source code to a remote repository on GitHub, follow the steps below. The `.gitignore` file is configured to exclude temporary system folders, build artifacts (`bin/`, `obj/`), `node_modules/`, and the local SQLite database (`vector_database.db`).
-
-1.  **Initialize a local Git repository:**
-    ```bash
-    git init
-    ```
-
-2.  **Stage all changes:**
-    ```bash
-    git add .
-    ```
-
-3.  **Commit the changes:**
-    ```bash
-    git commit -m "feat: upgrade system to support multilingual orchestrator, case-insensitive SEO analysis, and localized UI"
-    ```
-
-4.  **Set the default branch to `main`:**
-    ```bash
-    git branch -M main
-    ```
-
-5.  **Link to your remote GitHub repository:**
-    *(Replace the URL below with your actual repository URL)*
-    ```bash
-    git remote add origin https://github.com/username/repository-name.git
-    ```
-
-6.  **Push code to the remote repository:**
-    ```bash
-    git push -u origin main
-    ```
 
 ---
 
