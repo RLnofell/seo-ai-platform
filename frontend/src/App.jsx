@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Loader2, Cpu, FileText, CheckCircle, Send, Copy, Code, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Sparkles, Loader2, Cpu, FileText, CheckCircle, Send, Copy, Code, AlertTriangle } from 'lucide-react';
 import './index.css';
 
 const translations = {
@@ -234,30 +234,30 @@ function App() {
           <p className="subtitle">{t.subtitle}</p>
         </header>
 
-        <form className="input-section" onSubmit={handleRunAgent}>
+        <form className="input-container" onSubmit={handleRunAgent}>
           <input
             type="text"
-            className="cyber-input"
+            className="flat-input"
             placeholder={t.placeholder}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={loading}
           />
-          <button className="cyber-btn" type="submit" disabled={loading || !input.trim()}>
-            {loading ? <Loader2 className="spinner" size={20} /> : <Sparkles size={20} />}
+          <button className="btn-flat btn-flat-primary" type="submit" disabled={loading || !input.trim()}>
+            {loading ? <Loader2 className="spinner" size={20} strokeWidth={2.5} /> : <Sparkles size={20} strokeWidth={2.5} />}
             {loading ? t.btnRunning : t.btnSubmit}
           </button>
         </form>
 
         <div className="main-content">
-          <div className="glass-panel" onMouseMove={handleMouseMove}>
+          <div className="color-block-card card-blue-tint" onMouseMove={handleMouseMove}>
             <h2 className="panel-header cyan">
-              <Cpu size={24} /> {t.panelManager}
+              <span className="card-icon"><Cpu size={24} strokeWidth={2.5} /></span> {t.panelManager}
             </h2>
             <div className="log-container">
               {logs.length === 0 && !loading && (
                 <div style={{ color: 'rgba(148, 163, 184, 0.5)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '1rem' }}>
-                  <Send size={32} opacity={0.5} />
+                  <Send size={32} opacity={0.5} strokeWidth={2} />
                   <span>{t.waiting}</span>
                 </div>
               )}
@@ -278,14 +278,14 @@ function App() {
             </div>
           </div>
 
-          <div className="glass-panel result-container" onMouseMove={handleMouseMove}>
+          <div className="color-block-card card-green-tint result-container" onMouseMove={handleMouseMove}>
             <h2 className="panel-header success">
-              <FileText size={24} /> {t.panelResult}
+              <span className="card-icon"><FileText size={24} strokeWidth={2.5} /></span> {t.panelResult}
             </h2>
             
             {!result && !loading && (
               <div style={{ color: 'rgba(148, 163, 184, 0.4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '400px' }}>
-                <FileText size={64} style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
+                <FileText size={64} style={{ marginBottom: '1.5rem', opacity: 0.5 }} strokeWidth={1.5} />
                 <p style={{ fontSize: '1.1rem' }}>{t.resultPlaceholder}</p>
               </div>
             )}
@@ -297,7 +297,7 @@ function App() {
                 className="loading-state"
               >
                 <div className="pulse-ring">
-                  <Cpu className="spinner" size={32} />
+                  <Cpu className="spinner" size={32} strokeWidth={2.5} />
                 </div>
                 <p style={{ fontSize: '1.1rem', letterSpacing: '0.5px' }}>{t.loadingState}</p>
               </motion.div>
@@ -316,21 +316,21 @@ function App() {
                     className={`tab-btn ${activeTab === 'article' ? 'active' : ''}`}
                     onClick={() => setActiveTab('article')}
                   >
-                    <FileText size={16} />
+                    <FileText size={16} strokeWidth={2.5} />
                     <span>{t.tabArticle}</span>
                   </button>
                   <button 
                     className={`tab-btn ${activeTab === 'audit' ? 'active' : ''}`}
                     onClick={() => setActiveTab('audit')}
                   >
-                    <CheckCircle size={16} />
+                    <CheckCircle size={16} strokeWidth={2.5} />
                     <span>{t.tabAudit}</span>
                   </button>
                   <button 
                     className={`tab-btn ${activeTab === 'schema' ? 'active' : ''}`}
                     onClick={() => setActiveTab('schema')}
                   >
-                    <Code size={16} />
+                    <Code size={16} strokeWidth={2.5} />
                     <span>{t.tabSchema}</span>
                   </button>
                 </div>
@@ -341,19 +341,19 @@ function App() {
                     <div className="stats-grid">
                       {result.densityResult && (
                         <div className="stat-card">
-                          <CheckCircle size={18} />
+                          <CheckCircle size={18} strokeWidth={2.5} />
                           <span>{result.densityResult}</span>
                         </div>
                       )}
                       {result.postResult && (
                         <div className="stat-card success">
-                          <CheckCircle size={18} />
+                          <CheckCircle size={18} strokeWidth={2.5} />
                           <span>{result.postResult}</span>
                         </div>
                       )}
                       {result.googleIndexingResult && (
                         <div className="stat-card indexing">
-                          <CheckCircle size={18} />
+                          <CheckCircle size={18} strokeWidth={2.5} />
                           <span>{result.googleIndexingResult}</span>
                         </div>
                       )}
@@ -395,9 +395,9 @@ function App() {
                       <ul className="recommendations-list">
                         {result.audit?.recommendations?.map((rec, i) => (
                           <li key={i} className={`rec-item ${rec.startsWith('✓') ? 'success' : rec.startsWith('!') ? 'warning' : 'danger'}`}>
-                            {rec.startsWith('✓') && <CheckCircle size={16} />}
-                            {rec.startsWith('!') && <AlertTriangle size={16} />}
-                            {(!rec.startsWith('✓') && !rec.startsWith('!')) && <AlertTriangle size={16} />}
+                            {rec.startsWith('✓') && <CheckCircle size={16} strokeWidth={2.5} />}
+                            {rec.startsWith('!') && <AlertTriangle size={16} strokeWidth={2.5} />}
+                            {(!rec.startsWith('✓') && !rec.startsWith('!')) && <AlertTriangle size={16} strokeWidth={2.5} />}
                             <span>{rec.replace(/^[✓!✗]\s*/, '')}</span>
                           </li>
                         ))}
@@ -426,7 +426,7 @@ function App() {
                         className="copy-btn" 
                         onClick={() => handleCopy(JSON.stringify(result.meta?.jsonLd || {}, null, 2))}
                       >
-                        <Copy size={16} />
+                        <Copy size={16} strokeWidth={2.5} />
                         <span>{copied ? t.copied : t.copySchema}</span>
                       </button>
                     </div>
